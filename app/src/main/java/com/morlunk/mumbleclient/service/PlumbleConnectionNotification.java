@@ -17,17 +17,24 @@
 
 package com.morlunk.mumbleclient.service;
 
+import android.annotation.TargetApi;
 import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
+import android.graphics.Color;
+import android.os.Build;
 import android.support.v4.app.NotificationCompat;
 
 import com.morlunk.mumbleclient.R;
 import com.morlunk.mumbleclient.app.DrawerAdapter;
+import com.morlunk.mumbleclient.app.MyApplication;
 import com.morlunk.mumbleclient.app.PlumbleActivity;
 
 import java.util.ArrayList;
@@ -129,7 +136,16 @@ public class PlumbleConnectionNotification {
      * Called to update/create the service's foreground Plumble notification.
      */
     private Notification createNotification() {
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(mService);
+        NotificationCompat.Builder builder=null;
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            builder = new NotificationCompat.Builder(mService);
+        } else {
+            String channelId =createNotificationChannel("my_service", "My Background Service");
+            builder = new NotificationCompat.Builder(mService,channelId);
+        }
+
+
         builder.setContentTitle(mService.getString(R.string.app_name));
         builder.setContentText(mCustomContentText);
         builder.setSmallIcon(R.drawable.ic_stat_notify);
@@ -162,6 +178,16 @@ public class PlumbleConnectionNotification {
         Notification notification = builder.build();
         mService.startForeground(NOTIFICATION_ID, notification);
         return notification;
+    }
+
+    @TargetApi(Build.VERSION_CODES.O)
+    private String createNotificationChannel(String channelId, String channelName){
+
+        NotificationManager notificationManager =
+                (NotificationManager)    MyApplication.applicationContext.getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationChannel notificationChannel= new NotificationChannel(channelId,channelName,NotificationManager.IMPORTANCE_NONE);
+        notificationManager.createNotificationChannel(notificationChannel);
+        return channelId;
     }
 
     public interface OnActionListener {
